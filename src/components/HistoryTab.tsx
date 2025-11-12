@@ -32,15 +32,16 @@ const HistoryTab = ({ userId, refreshTrigger }: HistoryTabProps) => {
   const fetchHistory = async () => {
     try {
       const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
       
-      // Get acts from the past 30 days (excluding today)
+      // Get acts from the past 30 days
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(today.getDate() - 30);
       
       const { data: acts, error: actsError } = await supabase
         .from('acts')
         .select('*')
-        .lt('date', today.toISOString().split('T')[0])
+        .lte('date', todayStr)
         .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
         .order('date', { ascending: false });
 
@@ -54,10 +55,19 @@ const HistoryTab = ({ userId, refreshTrigger }: HistoryTabProps) => {
 
       const completedActIds = new Set(completions?.map(c => c.act_id) || []);
 
-      const historyData = acts?.map(act => ({
-        act,
-        completed: completedActIds.has(act.id)
-      })) || [];
+      // Filter out today's act if not completed, show all past acts with completion status
+      const historyData = acts
+        ?.filter(act => {
+          // Show past acts regardless of completion
+          if (act.date < todayStr) return true;
+          // Only show today's act if it's been completed
+          if (act.date === todayStr) return completedActIds.has(act.id);
+          return false;
+        })
+        .map(act => ({
+          act,
+          completed: completedActIds.has(act.id)
+        })) || [];
 
       setHistory(historyData);
     } catch (error) {
