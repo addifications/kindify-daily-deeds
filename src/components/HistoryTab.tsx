@@ -33,14 +33,14 @@ const HistoryTab = ({ userId, refreshTrigger }: HistoryTabProps) => {
     try {
       const today = new Date();
       
-      // Get acts from the past 30 days
+      // Get acts from the past 30 days (excluding today)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(today.getDate() - 30);
       
       const { data: acts, error: actsError } = await supabase
         .from('acts')
         .select('*')
-        .lte('date', today.toISOString().split('T')[0])
+        .lt('date', today.toISOString().split('T')[0])
         .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
         .order('date', { ascending: false });
 
